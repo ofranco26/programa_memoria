@@ -1,0 +1,74 @@
+
+package aula07;
+
+import javax.swing.JOptionPane;
+import java.util.ArrayList;
+import java.util.Random;
+
+public class Aula07 {
+    public static void main(String[] args) {
+        Random random = new Random();
+        ArrayList<Integer> sequencia = new ArrayList<>();
+        int rodada = 1;
+
+        // Exibe uma mensagem inicial utilizando JOptionPane
+        JOptionPane.showMessageDialog(null, "( ͡° ͜ʖ ͡°) Bem-vindo ao Jogo da Memória!\nTente memorizar a sequência de números e reproduza-a.");
+
+        while (true) {
+            // Adiciona um novo número aleatório à sequência
+            int numeroAleatorio = random.nextInt(9) + 1; // Números de 1 a 9
+            sequencia.add(numeroAleatorio);
+
+            // Mostra a sequência para o jogador
+            StringBuilder sequenciaStr = new StringBuilder("Memorize esta sequência:\n");
+            for (int num : sequencia) {
+                sequenciaStr.append(num).append(" ");
+            }
+            // Exibe a sequência usando JOptionPane
+            JOptionPane.showMessageDialog(null, sequenciaStr.toString());
+
+            // Dá um tempo para o jogador memorizar (simulando com Thread.sleep)
+            try {
+                Thread.sleep(1500); // Espera 1.5 segundos antes de limpar a tela
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            // Limpa a tela (ou apenas imprime um aviso)
+            JOptionPane.showMessageDialog(null, "Agora, digite a sequência de números, um por vez.");
+
+            // O jogador deve tentar adivinhar a sequência
+            boolean acertou = true;
+            for (int i = 0; i < sequencia.size(); i++) {
+                // Solicita a entrada do jogador
+                String palpiteStr = JOptionPane.showInputDialog("Digite o " + (i + 1) + "º número:");
+
+                // Verifica se o jogador digitou um número válido
+                try {
+                    int palpite = Integer.parseInt(palpiteStr);
+                    // Se o palpite estiver errado, o jogador perde
+                    if (palpite != sequencia.get(i)) {
+                        acertou = false;
+                        break;
+                    }
+                } catch (NumberFormatException e) {
+                    // Caso o jogador não insira um número válido
+                    JOptionPane.showMessageDialog(null, "Você deve digitar um número válido!");
+                    acertou = false;
+                    break;
+                }
+            }
+
+            // Verifica se o jogador acertou a sequência
+            if (acertou) {
+                JOptionPane.showMessageDialog(null, "Parabéns! Você acertou a sequência.");
+                rodada++;
+            } else {
+                String mensagem = "Você errou! A sequência correta era: " + sequencia + "\nGame Over! Você chegou até a rodada " + rodada + ".";
+                JOptionPane.showMessageDialog(null, mensagem);
+                break;
+            }
+        }
+    }
+}
+```
