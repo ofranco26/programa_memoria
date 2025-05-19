@@ -1,74 +1,352 @@
+package jogodamemoria_1;
 
-package aula07;
 
-import javax.swing.JOptionPane;
-import java.util.ArrayList;
-import java.util.Random;
 
-public class Aula07 {
-    public static void main(String[] args) {
-        Random random = new Random();
-        ArrayList<Integer> sequencia = new ArrayList<>();
-        int rodada = 1;
+import javax.swing.*;
 
-        // Exibe uma mensagem inicial utilizando JOptionPane
-        JOptionPane.showMessageDialog(null, "( ͡° ͜ʖ ͡°) Bem-vindo ao Jogo da Memória!\nTente memorizar a sequência de números e reproduza-a.");
+import java.util.*;
 
-        while (true) {
-            // Adiciona um novo número aleatório à sequência
-            int numeroAleatorio = random.nextInt(9) + 1; // Números de 1 a 9
-            sequencia.add(numeroAleatorio);
+import java.util.concurrent.TimeUnit;
+public class JogoDaMemoria_1 {
 
-            // Mostra a sequência para o jogador
-            StringBuilder sequenciaStr = new StringBuilder("Memorize esta sequência:\n");
-            for (int num : sequencia) {
-                sequenciaStr.append(num).append(" ");
-            }
-            // Exibe a sequência usando JOptionPane
-            JOptionPane.showMessageDialog(null, sequenciaStr.toString());
+   static Random random = new Random();
 
-            // Dá um tempo para o jogador memorizar (simulando com Thread.sleep)
-            try {
-                Thread.sleep(1500); // Espera 1.5 segundos antes de limpar a tela
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+   static HashMap<String, Integer> rankingGlobal = new HashMap<>();
+   public static void main(String[] args) {
 
-            // Limpa a tela (ou apenas imprime um aviso)
-            JOptionPane.showMessageDialog(null, "Agora, digite a sequência de números, um por vez.");
+       while (true) {
 
-            // O jogador deve tentar adivinhar a sequência
-            boolean acertou = true;
-            for (int i = 0; i < sequencia.size(); i++) {
-                // Solicita a entrada do jogador
-                String palpiteStr = JOptionPane.showInputDialog("Digite o " + (i + 1) + "º número:");
+           String[] opcoesMenu = {"🎮 Iniciar Jogo", "📖 Tutorial", "⚖️ Regras", "🏆 Ranking", "❌ Sair"};
 
-                // Verifica se o jogador digitou um número válido
-                try {
-                    int palpite = Integer.parseInt(palpiteStr);
-                    // Se o palpite estiver errado, o jogador perde
-                    if (palpite != sequencia.get(i)) {
-                        acertou = false;
-                        break;
-                    }
-                } catch (NumberFormatException e) {
-                    // Caso o jogador não insira um número válido
-                    JOptionPane.showMessageDialog(null, "Você deve digitar um número válido!");
-                    acertou = false;
-                    break;
-                }
-            }
+           String escolhaMenu = (String) JOptionPane.showInputDialog(null, "🎉 Seja bem-vindo ao **Jogo da Memória**!\nEscolha uma opção:", "Menu Principal", JOptionPane.QUESTION_MESSAGE, null, opcoesMenu, opcoesMenu[0]);
+           if (escolhaMenu == null || escolhaMenu.equals("❌ Sair")) {
 
-            // Verifica se o jogador acertou a sequência
-            if (acertou) {
-                JOptionPane.showMessageDialog(null, "Parabéns! Você acertou a sequência.");
-                rodada++;
-            } else {
-                String mensagem = "Você errou! A sequência correta era: " + sequencia + "\nGame Over! Você chegou até a rodada " + rodada + ".";
-                JOptionPane.showMessageDialog(null, mensagem);
-                break;
-            }
-        }
-    }
+               JOptionPane.showMessageDialog(null, "👋 Obrigado por jogar! Até a próxima!");
+
+               break;
+
+           }
+           switch (escolhaMenu) {
+
+               case "📖 Tutorial":
+
+                   JOptionPane.showMessageDialog(null, "📜 No **Jogo da Memória**, você precisa memorizar números e responder perguntas para acumular pontos!");
+
+                   break;
+
+               case "⚖️ Regras":
+
+                   JOptionPane.showMessageDialog(null, "📌 **Regras do Jogo**:\n✅ Cada jogador recebe um número aleatório para memorizar.\n✅ Cada resposta correta vale **10 pontos**.\n✅ Erros reduzem a pontuação em **-5 pontos**.\n✅ Perguntas surpresa podem dobrar ou roubar pontos!");
+
+                   break;
+
+               case "🏆 Ranking":
+
+                   if (rankingGlobal.isEmpty()) {
+
+                       JOptionPane.showMessageDialog(null, "🏅 **Ranking** está vazio! Jogue para preencher.");
+
+                   } else {
+
+                       StringBuilder ranking = new StringBuilder("🏅 **Ranking** 🏅\n");
+
+                       for (Map.Entry<String, Integer> entry : rankingGlobal.entrySet()) {
+
+                           ranking.append(entry.getKey()).append(" - Pontos: ").append(entry.getValue()).append("\n");
+
+                       }
+
+                       JOptionPane.showMessageDialog(null, ranking.toString());
+
+                   }
+
+                   break;
+
+               case "🎮 Iniciar Jogo":
+
+                   iniciarJogo();
+
+                   break;
+
+           }
+
+       }
+
+   }
+   private static void iniciarJogo() {
+
+       int numJogadores = obterNumeroJogadores();
+
+       if (numJogadores <= 0) return;
+       String[] nomes = obterNomesJogadores(numJogadores);
+
+       int[] pontos = new int[numJogadores];
+
+       int[] numerosMemorizados = new int[numJogadores];
+
+       int tempoMemorizacao = definirDificuldade();
+       for (int rodada = 1; rodada <= 5; rodada++) {
+
+           jogarRodada(numJogadores, nomes, numerosMemorizados, pontos, tempoMemorizacao);
+
+           exibirRanking(numJogadores, nomes, pontos);
+
+           realizarPerguntaSurpresa(numJogadores, nomes, pontos);
+
+       }
+       determinarVencedor(numJogadores, nomes, pontos);
+
+       exibirResultadoFinal(nomes, pontos);
+
+   }
+   private static int obterNumeroJogadores() {
+
+       try {
+
+           int numJogadores = Integer.parseInt(JOptionPane.showInputDialog("👥 Quantos jogadores irão participar?"));
+
+           if (numJogadores <= 0) {
+
+               JOptionPane.showMessageDialog(null, "⚠️ O número de jogadores deve ser maior que zero.");
+
+               return 0;
+
+           }
+
+           return numJogadores;
+
+       } catch (NumberFormatException e) {
+
+           JOptionPane.showMessageDialog(null, "⚠️ Digite um número válido!");
+
+           return 0;
+
+       }
+
+   }
+   private static String[] obterNomesJogadores(int numJogadores) {
+
+       String[] nomes = new String[numJogadores];
+
+       for (int i = 0; i < numJogadores; i++) {
+
+           nomes[i] = JOptionPane.showInputDialog("👋 Jogador " + (i + 1) + ", qual é o seu nome?");
+
+       }
+
+       return nomes;
+
+   }
+   private static int definirDificuldade() {
+
+       String[] niveis = {"🎯 Fácil", "🏆 Médio", "🔥 Difícil"};
+
+       String nivelEscolhido = (String) JOptionPane.showInputDialog(null, "Escolha o nível de dificuldade:", "Nível de Dificuldade", JOptionPane.QUESTION_MESSAGE, null, niveis, niveis[0]);
+       switch (nivelEscolhido) {
+
+           case "🏆 Médio":
+
+               return 3000;
+
+           case "🔥 Difícil":
+
+               return 2000;
+
+           default:
+
+               return 5000;
+
+       }
+
+   }
+   private static void jogarRodada(int numJogadores, String[] nomes, int[] numerosMemorizados, int[] pontos, int tempoMemorizacao) {
+
+       for (int i = 0; i < numJogadores; i++) {
+
+           int numeroMemorizado = random.nextInt(100) + 1;
+
+           numerosMemorizados[i] = numeroMemorizado;
+           JOptionPane.showMessageDialog(null, "🔢 Jogador " + nomes[i] + ", memorize este número:\n**" + numeroMemorizado + "**");
+
+           try {
+
+               TimeUnit.MILLISECONDS.sleep(tempoMemorizacao);
+
+           } catch (InterruptedException e) {
+
+               Thread.currentThread().interrupt();
+
+           }
+           String palpiteStr = JOptionPane.showInputDialog("🤔 Digite o número que você memorizou:");
+
+           verificarPalpite(numeroMemorizado, palpiteStr, pontos, i);
+
+       }
+
+   }
+   private static void verificarPalpite(int numeroMemorizado, String palpiteStr, int[] pontos, int i) {
+
+       try {
+
+           int palpite = Integer.parseInt(palpiteStr);
+
+           if (palpite == numeroMemorizado) {
+
+               JOptionPane.showMessageDialog(null, "🎉 Correto! Você ganhou **+10 pontos**!");
+
+               pontos[i] += 10;
+
+           } else {
+
+               JOptionPane.showMessageDialog(null, "❌ Errado! Você perdeu **-5 pontos**.");
+
+               pontos[i] -= 5;
+
+           }
+
+       } catch (NumberFormatException e) {
+
+           JOptionPane.showMessageDialog(null, "⚠️ Digite um número válido!");
+
+       }
+
+   }
+   private static void exibirRanking(int numJogadores, String[] nomes, int[] pontos) {
+
+       StringBuilder ranking = new StringBuilder("🏆 **Ranking Atual** 🏆\n");
+
+       for (int i = 0; i < numJogadores; i++) {
+
+           ranking.append((i + 1)).append(". ").append(nomes[i]).append(" - Pontos: ").append(pontos[i]).append("\n");
+
+       }
+
+       JOptionPane.showMessageDialog(null, ranking.toString());
+
+   }
+   private static void realizarPerguntaSurpresa(int numJogadores, String[] nomes, int[] pontos) {
+
+       int indiceJogadorSurpresa = random.nextInt(numJogadores);
+
+       JOptionPane.showMessageDialog(null, "🎭 Pergunta surpresa! Jogador " + nomes[indiceJogadorSurpresa] + ", responda corretamente para ganhar **20 pontos** ou perder **10 pontos**!");
+       // Lista de perguntas gerais com 9 perguntas no total
+
+       String[] perguntasGerais = {
+
+           "Qual é a capital da França?", 
+
+           "Quem escreveu 'Dom Quixote'?", 
+
+           "Quantos planetas existem no Sistema Solar?",
+
+           "Qual é a capital da Alemanha?",
+
+           "Qual é o maior planeta do Sistema Solar?",
+
+           "Quem pintou a Mona Lisa?",
+
+           "Quantos estados tem o Brasil?",
+
+           "Qual é o nome do autor de 'Harry Potter'?",
+
+           "Qual é o símbolo químico da água?"
+
+       };
+       // Respostas correspondentes às perguntas
+
+       String[] respostasGerais = {
+
+           "Paris", 
+
+           "Miguel de Cervantes", 
+
+           "8", 
+
+           "Berlim", 
+
+           "Júpiter", 
+
+           "Leonardo da Vinci", 
+
+           "26", 
+
+           "J.K. Rowling", 
+
+           "H2O"
+
+       };
+       int perguntaIndex = random.nextInt(perguntasGerais.length);
+
+       String respostaStr = JOptionPane.showInputDialog("❓ " + perguntasGerais[perguntaIndex]);
+       if (respostaStr != null && respostaStr.equalsIgnoreCase(respostasGerais[perguntaIndex])) {
+
+           JOptionPane.showMessageDialog(null, "✅ Correto! Você ganhou **+20 pontos**!");
+
+           pontos[indiceJogadorSurpresa] += 20;
+
+       } else {
+
+           JOptionPane.showMessageDialog(null, "❌ Errado! Você perdeu **-10 pontos**!");
+
+           pontos[indiceJogadorSurpresa] -= 10;
+
+       }
+
+   }
+   private static void determinarVencedor(int numJogadores, String[] nomes, int[] pontos) {
+
+       int vencedor = 0;
+
+       for (int i = 1; i < numJogadores; i++) {
+
+           if (pontos[i] > pontos[vencedor]) {
+
+               vencedor = i;
+
+           }
+
+       }
+
+       JOptionPane.showMessageDialog(null, "🏅 O grande vencedor é **" + nomes[vencedor] + "** com **" + pontos[vencedor] + "** pontos!");
+       // Atualizar o ranking global, somando os pontos
+
+       rankingGlobal.put(nomes[vencedor], rankingGlobal.getOrDefault(nomes[vencedor], 0) + pontos[vencedor]);
+
+   }
+   private static void exibirResultadoFinal(String[] nomes, int[] pontos) {
+
+       StringBuilder rankingFinal = new StringBuilder("🏆 **Resultado Final da Partida** 🏆\n");
+
+       for (int i = 0; i < nomes.length; i++) {
+
+           rankingFinal.append((i + 1)).append(". ").append(nomes[i]).append(" - Pontos: ").append(pontos[i]).append("\n");
+
+       }
+
+       JOptionPane.showMessageDialog(null, rankingFinal.toString());
+       // Exibir o Ranking Global
+
+       JOptionPane.showMessageDialog(null, "🏅 **Ranking Atualizado** 🏅\n" + getRankingGlobal());
+
+   }
+   private static String getRankingGlobal() {
+
+       StringBuilder ranking = new StringBuilder();
+
+       // Ordena o ranking global pela pontuação
+
+       List<Map.Entry<String, Integer>> rankingList = new ArrayList<>(rankingGlobal.entrySet());
+
+       rankingList.sort((entry1, entry2) -> Integer.compare(entry2.getValue(), entry1.getValue()));
+       for (Map.Entry<String, Integer> entry : rankingList) {
+
+           ranking.append(entry.getKey()).append(" - Pontos: ").append(entry.getValue()).append("\n");
+
+       }
+
+       return ranking.toString();
+
+   }
+
 }
-```
+ 
